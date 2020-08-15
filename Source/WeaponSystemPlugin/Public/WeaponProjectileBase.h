@@ -37,7 +37,7 @@ public:
 		bool ShouldApplyImpulse = true;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		float ImpluseMultiplier = 1.f;
+		float ImpulseMultiplier = 1.f;
 
 	/*Needed for calculations of effects*/
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)

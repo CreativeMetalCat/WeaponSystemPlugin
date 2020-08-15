@@ -85,6 +85,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated)
 		USoundBase* SecondaryOutOfAmmoSound;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		bool bInfiniteAmmo = false;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated)
 		USoundBase* PickupSound;
 
@@ -103,7 +106,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Category, SaveGame)
 		int Category = 0;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated, SaveGame)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Category, SaveGame)
+		int BulletsPerShot = 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated, SaveGame, meta = (ExposeOnSpawn = true))
 		int AmmoInTheClip = 0;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated)
@@ -165,7 +171,7 @@ public:
 		//What ammo type does this weapon need
 		int AmmoTypeId = 0;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated, meta = (ExposeOnSpawn = true))
 		bool bCanBePickedUp = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = AI, SaveGame)

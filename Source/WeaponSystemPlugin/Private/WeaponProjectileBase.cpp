@@ -1,9 +1,10 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
+#include "WeaponProjectileBase.h"
 #include "WeaponSystemPlugin.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Components/SphereComponent.h"
-#include "WeaponProjectileBase.h"
+
 
 // Sets default values
 AWeaponProjectileBase::AWeaponProjectileBase()
@@ -53,7 +54,7 @@ void AWeaponProjectileBase::OnHit(UPrimitiveComponent* HitComp, AActor* OtherAct
 	// Only add impulse and destroy projectile if we hit a physics
 	if ((OtherActor != NULL) && ShouldApplyImpulse && (OtherActor != this) && (OtherComp != NULL) && OtherComp->IsSimulatingPhysics())
 	{
-		OtherComp->AddImpulseAtLocation(GetVelocity() * ImpluseMultiplier, GetActorLocation());
+		OtherComp->AddImpulseAtLocation(GetVelocity() * ImpulseMultiplier, GetActorLocation());
 
 		Destroy();
 	}
