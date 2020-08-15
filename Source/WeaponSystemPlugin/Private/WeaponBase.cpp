@@ -47,15 +47,17 @@ bool AWeaponBase::SpawnBulletNotServer(FVector location, FRotator rotation)
 {
 	if (WeaponOwner != nullptr)
 	{
-		//PrimaryFire(location, rotation);
-		//if (WeaponOwner->Implements<UWeaponInterface>() || (Cast<IWeaponInterface>(WeaponOwner) != nullptr)) { IWeaponInterface::Execute_RequestSpawnProjectile(WeaponOwner, PrimaryProjectileClass, location, rotation); }
+
+			//PrimaryFire(location, rotation);
+			//if (WeaponOwner->Implements<UWeaponInterface>() || (Cast<IWeaponInterface>(WeaponOwner) != nullptr)) { IWeaponInterface::Execute_RequestSpawnProjectile(WeaponOwner, PrimaryProjectileClass, location, rotation); }
+
+			auto bullet = GetWorld()->SpawnActor<AWeaponProjectileBase>(PrimaryProjectileClass, location, rotation);
+			if (bullet == nullptr) { return false; }
+			bullet->Damage = PrimaryDamage;
+			bullet->SetOwner(WeaponOwner);
+			bullet->StartLocation = location;
+			bullet->GetCollisionComp()->IgnoreActorWhenMoving(WeaponOwner, true);
 		
-		auto bullet = GetWorld()->SpawnActor<AWeaponProjectileBase>(PrimaryProjectileClass, location, rotation);
-		if (bullet == nullptr) { return false; }
-		bullet->Damage = PrimaryDamage;
-		bullet->SetOwner(WeaponOwner);
-		bullet->StartLocation = location;
-		bullet->GetCollisionComp()->IgnoreActorWhenMoving(WeaponOwner, true);
 		return true;
 	}
 	return false;
@@ -71,26 +73,36 @@ bool AWeaponBase::PrimaryFire_Implementation(FVector location, FRotator rotation
 
 	if (CanShoot())
 	{
-#ifdef DEBUG
-		GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, TEXT("Can Shoot!"));
-#endif // DEBUG
 
 		if (GetWorld() != nullptr)
 		{
 			if (PrimaryProjectileClass != nullptr)
 			{
 
-#ifdef DEBUG
-				GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, TEXT("Started shooting"));
-#endif // DEBUG
 				FRandomStream randomStream = FRandomStream(FMath::Rand());
-
-				FVector ShootDir = randomStream.VRandCone(rotation.Vector(), FMath::DegreesToRadians(bAiming ? DefaultFiringSpread / 2 : DefaultFiringSpread) * 0.5f, FMath::DegreesToRadians(bAiming ? DefaultFiringSpread / 2 : DefaultFiringSpread) * 0.5f);
-#ifdef ONLINE_BASE_CODE
-				if (GetLocalRole() < ENetRole::ROLE_Authority)
+				
+				for (int i = 0; i < BulletsPerShot; i++)
 				{
-					if (SpawnBulletNotServer(location, ShootDir.Rotation()))
+					
+					FVector ShootDir = randomStream.VRandCone(rotation.Vector(), FMath::DegreesToRadians((bAiming ? DefaultFiringSpread / 2 : DefaultFiringSpread)+CurrentFiringSpread) * 0.5f, FMath::DegreesToRadians((bAiming ? DefaultFiringSpread / 2 : DefaultFiringSpread) + CurrentFiringSpread) * 0.5f);
+#ifdef ONLINE_BASE_CODE
+					if (GetLocalRole() < ENetRole::ROLE_Authority)
 					{
+						if (SpawnBulletNotServer(location, ShootDir.Rotation()))
+						{
+							PrimaryFireEffects(location, rotation);
+							AmmoInTheClip -= 1;
+							if (AmmoInTheClip < 0) { AmmoInTheClip = 0; }
+							bCanShoot = false;
+							GetWorld()->GetTimerManager().SetTimer(CooldownTimerHadle, this, &AWeaponBase::EndCooldown, WeaponCooldown);
+							return true;
+						}
+						else { return false; }
+					}
+					else
+					{
+
+						ServerPrimaryFire(location, ShootDir.Rotation());
 						PrimaryFireEffects(location, rotation);
 						AmmoInTheClip -= 1;
 						if (AmmoInTheClip < 0) { AmmoInTheClip = 0; }
@@ -98,38 +110,21 @@ bool AWeaponBase::PrimaryFire_Implementation(FVector location, FRotator rotation
 						GetWorld()->GetTimerManager().SetTimer(CooldownTimerHadle, this, &AWeaponBase::EndCooldown, WeaponCooldown);
 						return true;
 					}
+#else
+					if (SpawnBulletNotServer(location, ShootDir.Rotation()))
+					{
+						
+						CurrentFiringSpread += SpreadIncrement;
+					}
 					else { return false; }
 				}
-				else
-				{
-
-					ServerPrimaryFire(location, ShootDir.Rotation());
-					PrimaryFireEffects(location, rotation);
-					AmmoInTheClip -= 1;
-					if (AmmoInTheClip < 0) { AmmoInTheClip = 0; }
-					bCanShoot = false;
-					GetWorld()->GetTimerManager().SetTimer(CooldownTimerHadle, this, &AWeaponBase::EndCooldown, WeaponCooldown);
-					return true;
-				}
-#else
-				if (SpawnBulletNotServer(location, ShootDir.Rotation()))
-				{
-#ifdef DEBUG
-					GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, TEXT("Spawned"));
-#endif // DEBUG
-					PrimaryFireEffects(location, rotation);
-					AmmoInTheClip -= 1;
-					if (AmmoInTheClip < 0) { AmmoInTheClip = 0; }
-					bCanShoot = false;
-					GetWorld()->GetTimerManager().SetTimer(CooldownTimerHadle, this, &AWeaponBase::EndCooldown, WeaponCooldown);
-					return true;
-				}
-				else { return false; }
+				PrimaryFireEffects(location, rotation);
+				AmmoInTheClip -= 1;
+				if (AmmoInTheClip < 0) { AmmoInTheClip = 0; }
+				bCanShoot = false;
+				GetWorld()->GetTimerManager().SetTimer(CooldownTimerHadle, this, &AWeaponBase::EndCooldown, WeaponCooldown);
+				return true;
 #endif
-
-
-
-
 			}
 			else
 			{
@@ -192,6 +187,7 @@ void AWeaponBase::PrimaryFireEffects_Implementation(FVector location, FRotator r
 void AWeaponBase::EndCooldown_Implementation()
 {
 	if (CooldownTimerHadle.IsValid()) { CooldownTimerHadle.Invalidate(); }
+	CurrentFiringSpread = 0;
 	bCanShoot = true;
 }
 
