@@ -85,7 +85,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated)
 		USoundBase* SecondaryOutOfAmmoSound;
 
-	PROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 		bool bInfiniteAmmo = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Replicated)
